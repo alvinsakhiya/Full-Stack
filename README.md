@@ -125,20 +125,6 @@ src/
  │   └── models/
 ```
 
----
-
-## 📸 Screenshots
-
-### 🔐 Login Page
-
-### 📊 Dashboard
-
-### 📋 Picking Lists
-
-### 💊 Medication Management
-
----
-
 ## 🧪 Testing
 
 The application was tested for:
@@ -179,8 +165,6 @@ Build output will be generated inside:
 ## 👨‍💻 Author
 
 **Alvin Sakhiya**
-BSc (Hons) Computing Systems
-Ulster University
 
 ---
 
