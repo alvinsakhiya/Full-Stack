@@ -130,16 +130,12 @@ src/
 ## 📸 Screenshots
 
 ### 🔐 Login Page
-(Add screenshot here)
 
 ### 📊 Dashboard
-(Add screenshot here)
 
 ### 📋 Picking Lists
-(Add screenshot here)
 
 ### 💊 Medication Management
-(Add screenshot here)
 
 ---
 
