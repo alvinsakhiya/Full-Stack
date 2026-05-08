@@ -1,0 +1,85 @@
+<aside class="app-sidebar">
+  <div class="sidebar-top">
+    <a class="sidebar-brand" routerLink="/dashboard">
+      <span class="brand-icon">
+        <i class="bi bi-capsule-pill"></i>
+      </span>
+      <span>
+        <strong>Dosette</strong>
+        <small>Management System</small>
+      </span>
+    </a>
+
+    <nav class="sidebar-nav">
+      <a class="sidebar-link" routerLink="/dashboard" routerLinkActive="active">
+        <i class="bi bi-grid-1x2-fill"></i>
+        <span>Dashboard</span>
+      </a>
+
+      <a *ngIf="isPrivileged()"
+         class="sidebar-link" routerLink="/patients" routerLinkActive="active">
+        <i class="bi bi-people-fill"></i>
+        <span>Patients</span>
+      </a>
+
+      <a *ngIf="isPrivileged()"
+         class="sidebar-link" routerLink="/medications" routerLinkActive="active">
+        <i class="bi bi-capsule-pill"></i>
+        <span>Medications</span>
+      </a>
+
+      <a *ngIf="isPrivileged()"
+         class="sidebar-link" routerLink="/cycles" routerLinkActive="active">
+        <i class="bi bi-calendar2-week-fill"></i>
+        <span>Cycles</span>
+      </a>
+
+      <a class="sidebar-link" routerLink="/picking-lists" routerLinkActive="active">
+        <i class="bi bi-clipboard-check-fill"></i>
+        <span>Picking Lists</span>
+      </a>
+
+      <a *ngIf="isPrivileged()"
+         class="sidebar-link" routerLink="/reports" routerLinkActive="active">
+        <i class="bi bi-bar-chart-fill"></i>
+        <span>Reports</span>
+      </a>
+    </nav>
+  </div>
+
+  <div class="sidebar-bottom">
+    <div class="user-section" (click)="toggleUserMenu()">
+      <div class="user-avatar">
+        <img *ngIf="currentUser?.avatar"
+             [src]="currentUser.avatar"
+             alt="avatar"
+             (error)="currentUser.avatar = ''" />
+
+        <span *ngIf="!currentUser?.avatar">
+          {{ getUserInitial() }}
+        </span>
+      </div>
+      <div class="user-info">
+        <strong>{{ getUserDisplayName() }}</strong>
+        <small>{{ currentUser?.role | titlecase }}</small>
+
+        <span *ngIf="currentUser?.auth_provider === 'auth0_google'" class="google-badge">
+          <i class="bi bi-google"></i> Google
+        </span>
+      </div>
+      <i class="bi bi-chevron-up user-toggle" [class.open]="showUserMenu"></i>
+    </div>
+
+    <div class="user-dropdown" *ngIf="showUserMenu">
+      <div class="user-detail">
+        <strong>{{ getUserDisplayName() }}</strong>
+        <small>{{ currentUser?.email || 'No email' }}</small>
+      </div>
+
+      <button class="dropdown-logout" (click)="logout()">
+        <i class="bi bi-box-arrow-right"></i>
+        Logout
+      </button>
+    </div>
+  </div>
+</aside>

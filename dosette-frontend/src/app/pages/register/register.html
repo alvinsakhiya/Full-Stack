@@ -1,0 +1,168 @@
+<div class="auth-wrap">
+  <div class="bg-blobs" aria-hidden="true">
+    <span class="blob blob-1"></span>
+    <span class="blob blob-2"></span>
+    <span class="blob blob-3"></span>
+  </div>
+
+  <div class="toast-message success" *ngIf="successMessage">
+    <i class="bi bi-check-circle-fill"></i>
+    <span>{{ successMessage }}</span>
+  </div>
+  <div class="success-overlay" *ngIf="successMessage">
+    <div class="success-check">
+      <i class="bi bi-check-circle-fill"></i>
+    </div>
+  </div>
+
+  <div class="toast-message error" *ngIf="errorMessage">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <span>{{ errorMessage }}</span>
+  </div>
+
+  <div class="auth-card">
+
+    <div class="auth-header">
+      <div class="logo">
+        <i class="bi bi-capsule-pill"></i>
+      </div>
+      <h2>Dosette System</h2>
+      <p class="subtitle">Create your pharmacy management account</p>
+    </div>
+
+    <form (ngSubmit)="onRegister()" class="auth-form">
+
+      <div class="form-group">
+        <label>Email</label>
+        <div class="input-shell">
+          <i class="bi bi-envelope input-icon"></i>
+          <input
+            type="email"
+            class="form-control"
+            [ngClass]="{
+              'is-valid': email && email.includes('@'),
+              'is-invalid': email && !email.includes('@')
+            }"
+            [(ngModel)]="email"
+            (ngModelChange)="onEmailChange()"
+            name="email"
+            required
+            placeholder="Enter your email"
+          />
+        </div>
+        <small class="text-danger" *ngIf="email && !email.includes('@')">
+          Please enter a valid email
+        </small>
+
+        <small *ngIf="emailChecking" style="color:#0071e3; font-weight:600;">
+          Checking email...
+        </small>
+
+        <small *ngIf="emailAvailable === true" style="color:#34c759; font-weight:600;">
+          ✓ Email is available
+        </small>
+
+        <small *ngIf="emailAvailable === false" style="color:#ff3b30; font-weight:600;">
+          ✕ Email already registered
+        </small>
+      </div>
+
+      <div class="avatar-preview" *ngIf="email">
+        <div class="avatar-circle">
+          {{ email.charAt(0).toUpperCase() }}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Password</label>
+        <div class="input-shell password-shell">
+          <i class="bi bi-lock input-icon"></i>
+          <input
+            [type]="showPassword ? 'text' : 'password'"
+            class="form-control"
+            [ngClass]="{
+              'is-valid': password && password.length >= 6,
+              'is-invalid': password && password.length < 6
+            }"
+            [(ngModel)]="password"
+            name="password"
+            required
+            placeholder="Enter your password"
+          />
+          <button
+            type="button"
+            class="password-toggle"
+            (click)="showPassword = !showPassword"
+          >
+            <i class="bi" [ngClass]="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+          </button>
+        </div>
+        <small class="text-danger" *ngIf="password && password.length < 6">
+          Password must be at least 6 characters
+        </small>
+
+        <div class="password-strength" *ngIf="password">
+          <div class="strength-bar" [ngClass]="getPasswordStrengthClass()"></div>
+          <small class="strength-text" [ngClass]="getPasswordStrengthClass()">
+            {{ getPasswordStrengthText() }}
+          </small>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Confirm Password</label>
+        <div class="input-shell password-shell">
+          <i class="bi bi-shield-lock input-icon"></i>
+          <input
+            [type]="showConfirmPassword ? 'text' : 'password'"
+            class="form-control"
+            [ngClass]="{
+              'is-valid': confirmPassword && confirmPassword === password,
+              'is-invalid': confirmPassword && confirmPassword !== password
+            }"
+            [(ngModel)]="confirmPassword"
+            name="confirmPassword"
+            required
+            placeholder="Confirm your password"
+          />
+          <button
+            type="button"
+            class="password-toggle"
+            (click)="showConfirmPassword = !showConfirmPassword"
+          >
+            <i class="bi" [ngClass]="showConfirmPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+          </button>
+        </div>
+        <small class="text-danger" *ngIf="confirmPassword && confirmPassword !== password">
+          Passwords do not match
+        </small>
+      </div>
+
+      <div class="form-group">
+        <label>Role</label>
+        <div class="input-shell">
+          <i class="bi bi-person-badge input-icon"></i>
+          <select class="form-control" [(ngModel)]="role" name="role" required>
+            <option value="admin">Admin</option>
+            <option value="pharmacist">Pharmacist</option>
+            <option value="dispenser">Dispenser</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn btn-primary w-100 login-btn" type="submit"
+        [disabled]="isLoading || !email || !password || !confirmPassword || !role || !email.includes('@') || password.length < 6 || confirmPassword !== password || emailAvailable !== true">
+        <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+        <i *ngIf="!isLoading" class="bi bi-person-plus me-2"></i>
+        {{ isLoading ? 'Creating account...' : 'Create account' }}
+      </button>
+
+    </form>
+
+    <div class="auth-footer">
+      <span>Already have an account?</span>
+      <a routerLink="/login">Sign in</a>
+    </div>
+
+  </div>
+</div>

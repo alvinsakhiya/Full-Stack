@@ -1,0 +1,129 @@
+<div class="cycle-form-shell">
+
+  <div class="form-header">
+    <a routerLink="/cycles" class="back-btn">
+      <i class="bi bi-arrow-left"></i>
+      Back
+    </a>
+
+    <div>
+      <h1>Create Cycle</h1>
+      <p>Set up a weekly dosette cycle for a patient</p>
+    </div>
+  </div>
+
+  <div class="form-card">
+
+    @if (errorMessage) {
+      <div class="alert alert-danger">{{ errorMessage }}</div>
+    }
+
+    <form (ngSubmit)="createCycle()" class="modern-form">
+
+      <!-- Patient -->
+      <div class="form-group">
+        <label>Patient</label>
+        <select [(ngModel)]="form.patient_id" name="patient_id" required>
+          <option value="">Select patient</option>
+
+          @for (p of patients; track p._id) {
+            <option [value]="p._id">
+              {{ p.name }}
+            </option>
+          }
+        </select>
+      </div>
+
+      <!-- Week Picker -->
+      <div class="form-row">
+        <div class="form-group">
+          <label>Week Start</label>
+          <input type="date" [(ngModel)]="form.week_start" name="week_start" required>
+        </div>
+
+        <div class="form-group">
+          <label>Week End</label>
+          <input type="date" [(ngModel)]="form.week_end" name="week_end" required>
+        </div>
+      </div>
+
+      <div class="week-preview">
+        <i class="bi bi-calendar-week"></i>
+        <span>{{ getSelectedWeekLabel() }}</span>
+      </div>
+
+      <div class="section-divider">
+        <span>Medications</span>
+      </div>
+
+      <button type="button" class="add-btn" (click)="addMedication()">
+        <i class="bi bi-plus-circle"></i>
+        Add Medication
+      </button>
+
+      @for (m of selectedMedications; track $index; let i = $index) {
+
+        <div class="med-card">
+
+          <div class="med-header">
+            <strong>Medication {{ i + 1 }}</strong>
+            <button type="button" (click)="removeMedication(i)">
+              <i class="bi bi-x"></i>
+            </button>
+          </div>
+
+          <div class="form-group">
+            <label>Select Medication</label>
+            <select [(ngModel)]="m.medication_id" name="med{{i}}" required>
+              <option value="">Choose medication</option>
+
+              @for (med of medications; track med._id) {
+                <option [value]="med._id">
+                  {{ med.name }} ({{ med.strength }})
+                </option>
+              }
+            </select>
+          </div>
+
+          <div class="timing-grid">
+
+            <label class="pill">
+              <input type="checkbox" [(ngModel)]="m.morning" name="morning{{i}}">
+              <span>Morning</span>
+            </label>
+
+            <label class="pill">
+              <input type="checkbox" [(ngModel)]="m.afternoon" name="afternoon{{i}}">
+              <span>Afternoon</span>
+            </label>
+
+            <label class="pill">
+              <input type="checkbox" [(ngModel)]="m.evening" name="evening{{i}}">
+              <span>Evening</span>
+            </label>
+
+            <label class="pill">
+              <input type="checkbox" [(ngModel)]="m.bedtime" name="bedtime{{i}}">
+              <span>Bedtime</span>
+            </label>
+
+          </div>
+
+        </div>
+      }
+
+      <button class="submit-btn" type="submit" [disabled]="!canSubmit()">
+        @if (isSubmitting) {
+          <span class="spinner"></span>
+          Creating...
+        } @else {
+          <i class="bi bi-check-circle"></i>
+          Create Cycle
+        }
+      </button>
+
+    </form>
+
+  </div>
+
+</div>

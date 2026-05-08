@@ -1,0 +1,113 @@
+<div class="page-shell fade-in">
+
+  <section class="page-header">
+    <div>
+      <p class="eyebrow">Patient Management</p>
+      <h1>{{ isEditMode ? 'Edit Patient' : 'Add Patient' }}</h1>
+      <p class="page-subtitle">Create and manage patient records for dosette preparation.</p>
+    </div>
+
+    <div class="page-actions">
+      <a routerLink="/patients" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-2"></i>
+        Back
+      </a>
+    </div>
+  </section>
+
+  <section class="apple-card form-card">
+
+    @if (errorMessage) {
+      <div class="alert alert-danger border-0 shadow-sm">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        {{ errorMessage }}
+      </div>
+    }
+
+    @if (isLoading) {
+      <div class="alert alert-info border-0 shadow-sm">
+        <i class="bi bi-arrow-repeat me-2"></i>
+        Loading patient...
+      </div>
+    }
+
+    <form (ngSubmit)="savePatient()" class="patient-form-grid">
+
+      <div class="form-group full-width">
+        <label>Full Name</label>
+        <div class="input-icon">
+          <i class="bi bi-person"></i>
+          <input
+            class="form-control"
+            [(ngModel)]="patient.name"
+            name="name"
+            required
+            placeholder="Enter full name"
+          >
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Date of Birth</label>
+        <div class="input-icon">
+          <i class="bi bi-calendar3"></i>
+          <input
+            type="date"
+            class="form-control"
+            [(ngModel)]="patient.date_of_birth"
+            name="date_of_birth"
+            required
+          >
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Phone</label>
+        <div class="input-icon">
+          <i class="bi bi-telephone"></i>
+          <input
+            class="form-control"
+            [(ngModel)]="patient.phone"
+            name="phone"
+            placeholder="e.g. 07XXXXXXXXX"
+          >
+        </div>
+      </div>
+
+      <div class="form-group full-width">
+        <label>Allergies</label>
+        <div class="input-icon">
+          <i class="bi bi-exclamation-triangle"></i>
+          <input
+            class="form-control"
+            [(ngModel)]="patient.allergies"
+            name="allergies"
+            placeholder="Penicillin, Latex"
+          >
+        </div>
+        <small class="helper-text">Separate multiple allergies with commas.</small>
+      </div>
+
+      <div class="form-group full-width">
+        <label>Notes</label>
+        <textarea
+          class="form-control"
+          rows="3"
+          [(ngModel)]="patient.notes"
+          name="notes"
+          placeholder="Additional patient information"
+        ></textarea>
+      </div>
+
+      <div class="form-actions full-width">
+        <button class="btn btn-primary" type="submit" [disabled]="isSaving">
+          <i class="bi me-2" [ngClass]="isSaving ? 'bi-arrow-repeat spin' : 'bi-check-circle'"></i>
+          {{ isSaving ? 'Saving...' : (isEditMode ? 'Update Patient' : 'Create Patient') }}
+        </button>
+      </div>
+
+    </form>
+
+  </section>
+
+</div>

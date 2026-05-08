@@ -1,0 +1,104 @@
+<div class="page-shell fade-in">
+
+  <section class="page-header">
+    <div>
+      <p class="eyebrow">Medication Management</p>
+      <h1>{{ isEditMode ? 'Edit Medication' : 'Add Medication' }}</h1>
+      <p class="page-subtitle">Create and manage medication stock, pricing and expiry details.</p>
+    </div>
+
+    <div class="page-actions">
+      <a routerLink="/medications" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-2"></i>
+        Back
+      </a>
+    </div>
+  </section>
+
+  <section class="apple-card form-card">
+
+    @if (errorMessage) {
+      <div class="alert alert-danger border-0 shadow-sm">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        {{ errorMessage }}
+      </div>
+    }
+
+    @if (isLoading) {
+      <div class="alert alert-info border-0 shadow-sm">
+        <i class="bi bi-arrow-repeat me-2"></i>
+        Loading medication...
+      </div>
+    }
+
+    <form (ngSubmit)="saveMedication()" class="medication-form-grid">
+
+      <div class="form-group full-width">
+        <label>Medication Name</label>
+        <div class="input-icon">
+          <i class="bi bi-capsule"></i>
+          <input class="form-control" [(ngModel)]="medication.name" name="name" required placeholder="e.g. Paracetamol">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Strength</label>
+        <div class="input-icon">
+          <i class="bi bi-activity"></i>
+          <input class="form-control" [(ngModel)]="medication.strength" name="strength" required placeholder="e.g. 500mg">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Form</label>
+        <select class="form-select" [(ngModel)]="medication.form" name="form" required>
+          <option value="">Select form</option>
+          <option value="Tablet">Tablet</option>
+          <option value="Capsule">Capsule</option>
+          <option value="Liquid">Liquid</option>
+          <option value="Cream">Cream</option>
+          <option value="Inhaler">Inhaler</option>
+          <option value="Patch">Patch</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Batch Number</label>
+        <div class="input-icon">
+          <i class="bi bi-upc-scan"></i>
+          <input class="form-control" [(ngModel)]="medication.batch_number" name="batch_number" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Stock Quantity</label>
+        <input type="number" class="form-control" [(ngModel)]="medication.stock_quantity" name="stock_quantity" required>
+      </div>
+
+      <div class="form-group">
+        <label>Low Stock Threshold</label>
+        <input type="number" class="form-control" [(ngModel)]="medication.low_stock_threshold" name="low_stock_threshold" required>
+      </div>
+
+      <div class="form-group">
+        <label>Price Per Unit (£)</label>
+        <input type="number" step="0.01" class="form-control" [(ngModel)]="medication.price_per_unit" name="price_per_unit" required>
+      </div>
+
+      <div class="form-group">
+        <label>Expiry Date</label>
+        <input type="date" class="form-control" [(ngModel)]="medication.expiry_date" name="expiry_date" required>
+      </div>
+
+      <div class="form-actions full-width">
+        <button class="btn btn-primary" type="submit" [disabled]="isSaving">
+          <i class="bi me-2" [ngClass]="isSaving ? 'bi-arrow-repeat spin' : 'bi-check-circle'"></i>
+          {{ isSaving ? 'Saving...' : (isEditMode ? 'Update Medication' : 'Create Medication') }}
+        </button>
+      </div>
+
+    </form>
+
+  </section>
+
+</div>

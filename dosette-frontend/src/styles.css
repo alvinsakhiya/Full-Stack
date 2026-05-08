@@ -1,0 +1,199 @@
+:root {
+  --bg: #f5f5f7;
+  --card: #ffffff;
+  --text: #1d1d1f;
+  --muted: #6e6e73;
+  --border: rgba(0, 0, 0, 0.06);
+  --primary: #0071e3;
+  --success: #34c759;
+  --danger: #ff3b30;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+html {
+  width: 100%;
+  min-height: 100vh;
+}
+
+
+.app-main {
+  margin-left: 240px;
+  padding: 28px 32px;
+}
+
+
+/* ===== Auth Layout Fix (Login/Register) ===== */
+.app-main.auth-main {
+  margin-left: 0 !important;
+  width: 100vw;
+  min-height: 100vh;
+  padding: 0 !important;
+}
+
+.auth-shell {
+  display: block;
+  width: 100vw;
+  min-height: 100vh;
+}
+
+.auth-main {
+  display: block;
+  width: 100vw;
+  min-height: 100vh;
+}
+
+.auth-main .route-animation {
+  width: 100vw;
+  min-height: 100vh;
+}
+
+.auth-main .route-animation > * {
+  width: 100vw;
+  min-height: 100vh;
+}
+
+/* Remove default spacing that causes shift */
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+
+
+.card, .panel {
+  background: var(--card);
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+  padding: 20px;
+}
+
+
+
+.btn {
+  border-radius: 14px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: var(--primary) !important;
+  border: none !important;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0,113,227,0.25);
+}
+
+
+
+input, select {
+  border-radius: 12px !important;
+  border: 1px solid var(--border) !important;
+  padding: 10px 12px !important;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(0,113,227,0.15);
+}
+
+
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th, td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+th {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeUp 0.4s ease;
+}
+
+
+/* ===== Route Transitions (Apple-like) ===== */
+
+.route-animation > * {
+  animation: pageEnter 0.35s ease both;
+}
+
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Slight stagger for lists */
+.table-row-animate {
+  animation: rowFade 0.35s ease both;
+}
+
+@keyframes rowFade {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.1);
+  border-radius: 10px;
+}
+
+
+@media (max-width: 900px) {
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

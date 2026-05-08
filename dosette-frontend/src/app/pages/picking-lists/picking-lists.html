@@ -1,0 +1,256 @@
+<div class="page-shell fade-in">
+  <section class="page-header picking-header">
+    <div>
+      <p class="eyebrow">Preparation Queue</p>
+      <h1>Picking Lists</h1>
+      <p class="page-subtitle">Prepare weekly dosette trays with stock checks and patient-level picking lists.</p>
+    </div>
+
+    <div class="page-actions">
+      <button class="btn btn-light" type="button" (click)="refreshPickingLists()">
+        <i class="bi bi-arrow-repeat me-2"></i>
+        Refresh
+      </button>
+
+      <button class="btn btn-outline-dark" type="button" (click)="printAll()" [disabled]="filteredCycles.length === 0">
+        <i class="bi bi-printer me-2"></i>
+        Print All
+      </button>
+
+      <span class="queue-badge">
+        <i class="bi bi-clipboard-check me-2"></i>
+        {{ filteredCycles.length }} pending
+      </span>
+    </div>
+  </section>
+
+  <section class="picking-summary-grid">
+    <div class="summary-card apple-card">
+      <div class="summary-icon blue">
+        <i class="bi bi-list-check"></i>
+      </div>
+      <div>
+        <strong>{{ filteredCycles.length }}</strong>
+        <span>Visible lists</span>
+      </div>
+    </div>
+
+    <div class="summary-card apple-card">
+      <div class="summary-icon orange">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+      </div>
+      <div>
+        <strong>{{ lowStockCycleCount }}</strong>
+        <span>Stock warnings</span>
+      </div>
+    </div>
+
+    <div class="summary-card apple-card">
+      <div class="summary-icon green">
+        <i class="bi bi-capsule-pill"></i>
+      </div>
+      <div>
+        <strong>{{ totalPickingItems }}</strong>
+        <span>Total medicines</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="apple-card search-card">
+    <form class="search-form" (ngSubmit)="onSearch()">
+      <div class="search-input-wrap">
+        <i class="bi bi-search"></i>
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Search by patient name or week date"
+          [(ngModel)]="search"
+          name="search"
+          (input)="applySearch()"
+        >
+      </div>
+
+      <button class="btn btn-outline-primary" type="submit">
+        <i class="bi bi-search me-2"></i>
+        Search
+      </button>
+
+      <button class="btn btn-outline-secondary" type="button" (click)="clearSearch()" *ngIf="search">
+        <i class="bi bi-x-circle me-2"></i>
+        Clear
+      </button>
+
+      <select class="form-select filter-select" [(ngModel)]="stockFilter" name="stockFilter" (change)="applySearch()">
+        <option value="all">All stock status</option>
+        <option value="warning">Stock warnings only</option>
+        <option value="safe">Safe stock only</option>
+      </select>
+    </form>
+  </section>
+
+  <div *ngIf="errorMessage" class="alert alert-danger border-0 shadow-sm">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="isLoading" class="alert alert-info border-0 shadow-sm">
+    <i class="bi bi-arrow-repeat me-2"></i>
+    Loading picking lists...
+  </div>
+
+  <div *ngIf="!isLoading && filteredCycles.length === 0" class="empty-panel apple-card">
+    <i class="bi bi-check-circle"></i>
+    <h3>No pending picking lists</h3>
+    <p>Everything is currently up to date.</p>
+  </div>
+
+  <section class="picking-grid">
+    <article
+      *ngFor="let cycle of filteredCycles; trackBy: trackByCycle"
+      class="picking-card apple-card"
+      [class.has-warning]="cycleHasLowStock(cycle)"
+      [attr.id]="'print-cycle-' + cycle._id"
+    >
+      <div class="print-header">
+        <div>
+          <h2>Dosette Picking List</h2>
+          <p>Patient medication preparation sheet</p>
+        </div>
+        <div class="print-meta">
+          <span>Printed: {{ todayLabel }}</span>
+          <span>Status: Pending Preparation</span>
+        </div>
+      </div>
+
+      <!-- LABEL PRINT SECTION (hidden on screen, used for label printing) -->
+      <div class="print-labels">
+        <div
+          class="print-label"
+          *ngFor="let item of generatePickingList(cycle); trackBy: trackByPickingItem"
+        >
+          <div class="label-title">Dosette Label</div>
+
+          <div class="label-body">
+            <strong>{{ patientMap[cycle.patient_id] || 'Patient' }}</strong>
+            <span>{{ medicationMap[item.medication_id]?.name || item.medication_id }}</span>
+            <small>{{ medicationMap[item.medication_id]?.strength || '' }}</small>
+          </div>
+
+          <div class="label-footer">
+            <span>Qty: {{ item.quantity }}</span>
+            <span>{{ formatWeekRange(cycle.week_start, cycle.week_end) }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="picking-card-header">
+        <div>
+          <div class="patient-title-row">
+            <div class="patient-avatar">
+              {{ (patientMap[cycle.patient_id] || '?').charAt(0) }}
+            </div>
+            <div>
+              <h2>{{ patientMap[cycle.patient_id] || 'Unknown Patient' }}</h2>
+              <p>
+                <i class="bi bi-calendar-week me-1"></i>
+                {{ formatWeekRange(cycle.week_start, cycle.week_end) }}
+              </p>
+              <small class="print-cycle-id">Cycle ID: {{ cycle._id }}</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-status-stack">
+          <span class="badge rounded-pill text-bg-warning">
+            Pending Preparation
+          </span>
+
+          <span class="stock-status" [class.warning]="cycleHasLowStock(cycle)">
+            {{ cycleHasLowStock(cycle) ? 'Stock issue' : 'Stock checked' }}
+          </span>
+        </div>
+      </div>
+
+      <div class="picking-progress">
+        <div>
+          <span>Picking progress</span>
+          <strong>{{ getPickingProgress(cycle) }}%</strong>
+        </div>
+        <div class="progress-track">
+          <span [style.width.%]="getPickingProgress(cycle)"></span>
+        </div>
+      </div>
+
+      <div class="picking-items">
+        <div
+          *ngFor="let item of generatePickingList(cycle); trackBy: trackByPickingItem"
+          class="picking-item"
+          [class.low-stock-item]="isLowStock(item)"
+        >
+          <div class="medicine-info">
+            <div class="medicine-icon">
+              <i class="bi bi-capsule"></i>
+            </div>
+
+            <div>
+              <strong>{{ medicationMap[item.medication_id]?.name || item.medication_id }}</strong>
+              <small>{{ medicationMap[item.medication_id]?.strength || 'Strength not recorded' }}</small>
+              <small class="print-med-id">Medication ID: {{ item.medication_id }}</small>
+
+              <p *ngIf="isLowStock(item)" class="stock-warning">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                Low stock — required {{ item.quantity }}, available {{ getMedicationStock(item.medication_id) }}
+              </p>
+
+              <p *ngIf="!isLowStock(item)" class="stock-ok">
+                Stock available: {{ getMedicationStock(item.medication_id) }}
+              </p>
+            </div>
+          </div>
+
+          <span class="quantity-pill">
+            Qty {{ item.quantity }}
+          </span>
+        </div>
+
+        <div *ngIf="generatePickingList(cycle).length === 0" class="text-muted small p-3">
+          No medicines added to this cycle.
+        </div>
+      </div>
+
+      <div class="print-signoff">
+        <div>
+          <span>Picked by</span>
+          <strong>________________________</strong>
+        </div>
+        <div>
+          <span>Checked by</span>
+          <strong>________________________</strong>
+        </div>
+        <div>
+          <span>Date</span>
+          <strong>________________________</strong>
+        </div>
+      </div>
+      <div class="picking-card-footer">
+        <button class="btn btn-sm btn-outline-dark" (click)="printCycle(cycle)">
+          <i class="bi bi-printer me-1"></i>
+          Print Patient List
+        </button>
+
+        <button class="btn btn-sm btn-outline-primary" (click)="printLabels(cycle)">
+          <i class="bi bi-tags me-1"></i>
+          Print Labels
+        </button>
+
+        <button
+          class="btn btn-sm btn-success"
+          (click)="markReadyToPrepare(cycle._id)"
+          [disabled]="updatingCycleId === cycle._id || cycleHasLowStock(cycle)"
+        >
+          <i class="bi bi-check2-circle me-1"></i>
+          {{ updatingCycleId === cycle._id ? 'Updating...' : 'Ready to Prepare' }}
+        </button>
+      </div>
+    </article>
+  </section>
+</div>

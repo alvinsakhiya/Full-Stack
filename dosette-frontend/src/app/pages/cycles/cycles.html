@@ -1,0 +1,351 @@
+<div class="page-shell fade-in">
+  <section class="page-header">
+    <div>
+      <p class="eyebrow">Dosette Workflow</p>
+      <h1>Cycles</h1>
+      <p class="page-subtitle">Manage weekly dosette cycles, tray status and medication preparation.</p>
+    </div>
+
+    <div class="page-actions">
+      <button class="btn btn-light" type="button" (click)="refreshCycles()">
+        <i class="bi bi-arrow-repeat me-2"></i>
+        Refresh
+      </button>
+
+      <a routerLink="/cycles/new" class="btn btn-primary page-action"
+         [class.disabled]="!isPrivileged()"
+         [attr.aria-disabled]="!isPrivileged()"
+         (click)="!isPrivileged() && $event.preventDefault()"
+         title="Permission required">
+        <i class="bi bi-calendar-plus me-2"></i>
+        Create Cycle
+      </a>
+    </div>
+  </section>
+
+  <section class="cycle-summary-grid">
+    <div class="summary-card apple-card">
+      <div class="summary-icon blue">
+        <i class="bi bi-calendar2-week-fill"></i>
+      </div>
+      <div>
+        <strong>{{ filteredCycles.length }}</strong>
+        <span>Total shown</span>
+      </div>
+    </div>
+
+    <div class="summary-card apple-card">
+      <div class="summary-icon green">
+        <i class="bi bi-play-circle-fill"></i>
+      </div>
+      <div>
+        <strong>{{ currentCycleCount }}</strong>
+        <span>Current week</span>
+      </div>
+    </div>
+
+    <div class="summary-card apple-card">
+      <div class="summary-icon orange">
+        <i class="bi bi-clock-history"></i>
+      </div>
+      <div>
+        <strong>{{ nextCycleCount }}</strong>
+        <span>Upcoming cycles</span>
+      </div>
+    </div>
+
+    <div class="summary-card apple-card">
+      <div class="summary-icon red">
+        <i class="bi bi-exclamation-octagon-fill"></i>
+      </div>
+      <div>
+        <strong>{{ overdueCycleCount }}</strong>
+        <span>Completed/overdue</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="apple-card search-card">
+    <form class="search-form" (ngSubmit)="onSearch()">
+      <div class="search-input-wrap">
+        <i class="bi bi-search"></i>
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Search by patient name, status, or week date"
+          [(ngModel)]="search"
+          name="search"
+          (input)="applySearch()"
+        >
+      </div>
+
+      <button class="btn btn-outline-primary" type="submit">
+        <i class="bi bi-search me-2"></i>
+        Search
+      </button>
+
+      <button class="btn btn-outline-secondary" type="button" (click)="clearSearch()" *ngIf="search">
+        <i class="bi bi-x-circle me-2"></i>
+        Clear
+      </button>
+
+      <select class="form-select filter-select" [(ngModel)]="cycleStatusFilter" name="cycleStatusFilter" (change)="applySearch()">
+        <option value="all">All statuses</option>
+        <option value="pending">Pending</option>
+        <option value="prepared">Prepared</option>
+        <option value="collected">Collected</option>
+        <option value="delivered">Delivered</option>
+      </select>
+
+      <select class="form-select filter-select" [(ngModel)]="cycleTimeFilter" name="cycleTimeFilter" (change)="applySearch()">
+        <option value="all">All weeks</option>
+        <option value="current">Current week</option>
+        <option value="next">Next cycles</option>
+        <option value="completed">Completed/overdue</option>
+      </select>
+    </form>
+  </section>
+
+  <div *ngIf="errorMessage" class="alert alert-danger border-0 shadow-sm">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="isLoading" class="alert alert-info border-0 shadow-sm">
+    <i class="bi bi-arrow-repeat me-2"></i>
+    Loading cycles...
+  </div>
+
+  <section *ngIf="!isLoading || filteredCycles.length > 0" class="apple-card table-card">
+    <div class="table-card-header">
+      <div>
+        <h2>Cycle Directory</h2>
+        <p>{{ filteredCycles.length }} cycle record(s) shown</p>
+      </div>
+
+      <span class="badge rounded-pill text-bg-primary">
+        Dosette Schedule
+      </span>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table apple-table align-middle">
+        <thead>
+          <tr>
+            <th>
+              <button class="sort-header" type="button" (click)="sortCycles('patient')">
+                Patient
+                <i class="bi" [ngClass]="getSortIcon('patient')"></i>
+              </button>
+            </th>
+            <th>
+              <button class="sort-header" type="button" (click)="sortCycles('week_start')">
+                Week
+                <i class="bi" [ngClass]="getSortIcon('week_start')"></i>
+              </button>
+            </th>
+            <th>
+              <button class="sort-header" type="button" (click)="sortCycles('status')">
+                Status
+                <i class="bi" [ngClass]="getSortIcon('status')"></i>
+              </button>
+            </th>
+            <th>Progress</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let c of filteredCycles; trackBy: trackByCycle"
+              class="table-row-animate"
+              [ngClass]="{
+                'row-current': getCycleLabel(c) === 'Current Week',
+                'row-overdue': getCycleLabel(c) === 'Completed'
+              }">
+            <td>
+              <div class="patient-cell">
+                <div class="patient-avatar">
+                  {{ (patientMap[c.patient_id] || '?').charAt(0) }}
+                </div>
+                <div>
+                  <strong>{{ patientMap[c.patient_id] || 'Unknown Patient' }}</strong>
+                  <small>Cycle ID: {{ c._id }}</small>
+                </div>
+              </div>
+            </td>
+
+            <td>
+              <div class="week-cell">
+                <span class="week-pill">
+                  <i class="bi bi-calendar-week me-1"></i>
+                  {{ formatWeekRange(c.week_start, c.week_end) }}
+                </span>
+
+                <div class="week-meta">
+                  <span class="cycle-label" [ngClass]="getCycleLabelClass(c)">
+                    {{ getCycleLabel(c) }}
+                  </span>
+
+                  <span class="countdown" *ngIf="getCycleLabel(c) !== 'Completed'">
+                    {{ getDaysRemaining(c) }} days left
+                  </span>
+
+                  <span class="overdue" *ngIf="getCycleLabel(c) === 'Completed'">
+                    Overdue
+                  </span>
+                </div>
+              </div>
+            </td>
+
+            <td>
+              <span class="badge rounded-pill" [ngClass]="{
+                'text-bg-warning': c.status === 'pending',
+                'text-bg-success': c.status === 'prepared',
+                'text-bg-primary': c.status === 'collected',
+                'text-bg-dark': c.status === 'delivered'
+              }">
+                {{ c.status | titlecase }}
+              </span>
+            </td>
+
+            <td>
+              <div class="cycle-progress">
+                <div class="progress-track">
+                  <span class="progress-fill" [style.width.%]="getCycleProgress(c)"></span>
+                </div>
+                <small>{{ getCycleProgress(c) }}% complete</small>
+              </div>
+            </td>
+
+            <td class="text-end">
+              <div class="action-group">
+                <button class="btn btn-sm btn-outline-info" (click)="openTray(c)">
+                  <i class="bi bi-grid-3x3-gap me-1"></i>
+                  View Tray
+                </button>
+
+                <button class="btn btn-sm btn-outline-success"
+                        (click)="canUpdateStatus() && confirmStatusChange(c, 'prepared')"
+                        [disabled]="c.status === 'prepared' || c.status === 'collected' || c.status === 'delivered' || !canUpdateStatus()"
+                        title="Permission required">
+                  Prepared
+                </button>
+
+                <button class="btn btn-sm btn-outline-primary"
+                        (click)="canUpdateStatus() && confirmStatusChange(c, 'collected')"
+                        [disabled]="c.status === 'collected' || c.status === 'delivered' || !canUpdateStatus()"
+                        title="Permission required">
+                  Collected
+                </button>
+
+                <button class="btn btn-sm btn-outline-dark"
+                        (click)="canUpdateStatus() && confirmStatusChange(c, 'delivered')"
+                        [disabled]="c.status === 'delivered' || !canUpdateStatus()"
+                        title="Permission required">
+                  Delivered
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <tr *ngIf="filteredCycles.length === 0">
+            <td colspan="5" class="empty-state">
+              <i class="bi bi-calendar-x"></i>
+              <p>No cycles found</p>
+              <small>Try clearing filters or creating a new weekly dosette cycle.</small>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div *ngIf="showTray && selectedCycle" class="tray-backdrop">
+    <div class="tray-modal apple-card">
+      <div class="tray-modal-header">
+        <div>
+          <p class="eyebrow">Weekly Tray</p>
+          <h2>Dosette Tray</h2>
+          <p>
+            {{ patientMap[selectedCycle.patient_id] || 'Unknown Patient' }} •
+            {{ formatWeekRange(selectedCycle.week_start, selectedCycle.week_end) }}
+          </p>
+        </div>
+
+        <button class="btn btn-sm btn-outline-secondary" (click)="closeTray()">
+          <i class="bi bi-x-lg me-1"></i>
+          Close
+        </button>
+      </div>
+
+      <div class="table-responsive tray-table-wrap">
+        <table class="table apple-table tray-table align-middle">
+          <thead>
+            <tr>
+              <th>Day</th>
+              <th>Morning</th>
+              <th>Afternoon</th>
+              <th>Evening</th>
+              <th>Bedtime</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let day of trayDays; trackBy: trackByDay">
+              <td class="fw-bold text-capitalize">{{ day }}</td>
+
+              <td *ngFor="let slot of traySlots; trackBy: trackBySlot">
+                <ng-container *ngIf="selectedCycle.tray_structure?.[day]?.[slot]?.length > 0; else emptySlot">
+                  <div
+                    *ngFor="let med of selectedCycle.tray_structure[day][slot]; trackBy: trackByTrayMedication"
+                    class="medicine-chip"
+                  >
+                    <span>{{ med.medication_name || medicationMap[med.medication_id] || med.medication_id }}</span>
+                    <strong>x{{ med.quantity }}</strong>
+                  </div>
+                </ng-container>
+
+                <ng-template #emptySlot>
+                  <span class="empty-slot">-</span>
+                </ng-template>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <section class="picking-card">
+        <div class="picking-card-header">
+          <div>
+            <p class="eyebrow">Preparation Summary</p>
+            <h3>Picking List</h3>
+          </div>
+
+          <span class="badge rounded-pill text-bg-primary">
+            {{ generatePickingList(selectedCycle).length }} item(s)
+          </span>
+        </div>
+
+        <ul class="list-group list-group-flush">
+          <li
+            *ngFor="let item of generatePickingList(selectedCycle); trackBy: trackByPickingItem"
+            class="list-group-item picking-item"
+          >
+            <div>
+              <strong>{{ medicationMap[item.medication_id] || item.medication_id }}</strong>
+              <div class="text-muted small">Required for this weekly tray</div>
+            </div>
+
+            <span class="badge bg-success rounded-pill fs-6">
+              {{ item.quantity }}
+            </span>
+          </li>
+
+          <li *ngIf="generatePickingList(selectedCycle).length === 0" class="list-group-item text-muted">
+            No medicines added to this cycle.
+          </li>
+        </ul>
+      </section>
+    </div>
+  </div>
+</div>

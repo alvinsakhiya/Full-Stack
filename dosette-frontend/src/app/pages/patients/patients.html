@@ -1,0 +1,332 @@
+<div class="page-shell fade-in">
+  <section class="page-header patients-header">
+    <div>
+      <p class="eyebrow">Patient Records</p>
+      <h1>Patients</h1>
+      <p class="page-subtitle">Manage dosette patient records, allergies and contact information.</p>
+    </div>
+
+    <div class="page-actions">
+      <button class="btn btn-light" type="button" (click)="refreshPatients()">
+        <i class="bi bi-arrow-repeat me-2"></i>
+        Refresh
+      </button>
+
+      <a routerLink="/patients/new"
+         class="btn btn-primary page-action"
+         [class.disabled]="!isPrivileged()"
+         [attr.aria-disabled]="!isPrivileged()"
+         (click)="!isPrivileged() && $event.preventDefault()"
+         title="Permission required">
+        <i class="bi bi-person-plus me-2"></i>
+        Add Patient
+      </a>
+    </div>
+  </section>
+
+  <section class="patient-summary-grid">
+    <div class="summary-card apple-card">
+      <div class="summary-icon blue">
+        <i class="bi bi-people-fill"></i>
+      </div>
+      <div>
+        <strong>{{ total }}</strong>
+        <span>Total records</span>
+      </div>
+    </div>
+
+    <div class="summary-card apple-card">
+      <div class="summary-icon green">
+        <i class="bi bi-check-circle-fill"></i>
+      </div>
+      <div>
+        <strong>{{ patients.length }}</strong>
+        <span>Currently shown</span>
+      </div>
+    </div>
+
+    <div class="summary-card apple-card">
+      <div class="summary-icon purple">
+        <i class="bi bi-search"></i>
+      </div>
+      <div>
+        <strong>{{ search || 'All' }}</strong>
+        <span>Search filter</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="apple-card search-card">
+    <form class="search-form" (ngSubmit)="onSearch()">
+      <div class="search-input-wrap">
+        <i class="bi bi-search"></i>
+        <input
+          class="form-control"
+          placeholder="Search patient by name"
+          [(ngModel)]="search"
+          name="search"
+        >
+      </div>
+
+      <button class="btn btn-outline-primary" type="submit">
+        <i class="bi bi-search me-2"></i>
+        Search
+      </button>
+
+      <button class="btn btn-outline-secondary" type="button" (click)="clearSearch()" *ngIf="search">
+        <i class="bi bi-x-circle me-2"></i>
+        Clear
+      </button>
+
+      <select class="form-select filter-select" [(ngModel)]="allergyFilter" name="allergyFilter" (change)="applyPatientFilters()">
+        <option value="all">All allergy status</option>
+        <option value="with">With allergies</option>
+        <option value="without">No allergies</option>
+      </select>
+    </form>
+  </section>
+
+  <div *ngIf="errorMessage" class="alert alert-danger border-0 shadow-sm">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="isLoading && patients.length === 0" class="alert alert-info border-0 shadow-sm">
+    <i class="bi bi-arrow-repeat me-2"></i>
+    Loading patients...
+  </div>
+
+  <section *ngIf="!isLoading || patients.length > 0" class="apple-card table-card">
+    <div class="table-card-header">
+      <div>
+        <h2>Patient Directory</h2>
+        <p>{{ total }} total patient record(s)</p>
+      </div>
+
+      <span class="badge rounded-pill text-bg-primary">
+        {{ patients.length }} shown
+      </span>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table apple-table align-middle">
+        <thead>
+          <tr>
+            <th>
+              <button class="sort-header" type="button" (click)="sortPatients('name')">
+                Patient
+                <i class="bi" [ngClass]="getSortIcon('name')"></i>
+              </button>
+            </th>
+            <th>
+              <button class="sort-header" type="button" (click)="sortPatients('date_of_birth')">
+                Date of Birth
+                <i class="bi" [ngClass]="getSortIcon('date_of_birth')"></i>
+              </button>
+            </th>
+            <th>
+              <button class="sort-header" type="button" (click)="sortPatients('phone')">
+                Phone
+                <i class="bi" [ngClass]="getSortIcon('phone')"></i>
+              </button>
+            </th>
+            <th>
+              <button class="sort-header" type="button" (click)="sortPatients('allergies')">
+                Allergies
+                <i class="bi" [ngClass]="getSortIcon('allergies')"></i>
+              </button>
+            </th>
+            <th>
+              <button class="sort-header" type="button" (click)="sortPatients('notes')">
+                Notes
+                <i class="bi" [ngClass]="getSortIcon('notes')"></i>
+              </button>
+            </th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let patient of filteredPatients; trackBy: trackByPatient" class="table-row-animate">
+
+            <ng-container *ngIf="editingPatientId !== patient._id; else editRow">
+
+              <td>
+                <div class="patient-cell">
+                  <div class="patient-avatar">
+                    {{ patient.name?.charAt(0) || '?' }}
+                  </div>
+                  <div>
+                    <strong [innerHTML]="highlightSearchText(patient.name)"></strong>
+                    <small>Patient ID: {{ patient._id }}</small>
+                  </div>
+                </div>
+              </td>
+
+              <td>
+                <span class="date-pill">
+                  <i class="bi bi-calendar3 me-1"></i>
+                  {{ patient.date_of_birth }}
+                </span>
+              </td>
+
+              <td [innerHTML]="highlightSearchText(patient.phone || '-')"></td>
+
+              <td>
+                <span class="soft-pill" [class.warning-pill]="patient.allergies?.length">
+                  {{ patient.allergies?.join(', ') || 'None' }}
+                </span>
+              </td>
+
+              <td class="notes-cell" [innerHTML]="highlightSearchText(patient.notes || '-')"></td>
+
+              <td class="text-end">
+                <div class="action-group">
+                  <button class="btn btn-sm btn-outline-primary" type="button" (click)="openPatientModal(patient)">
+                    <i class="bi bi-eye me-1"></i>
+                    View
+                  </button>
+
+                  <button class="btn btn-sm btn-outline-warning" type="button"
+                          (click)="isPrivileged() && startInlineEdit(patient)"
+                          [disabled]="!isPrivileged()"
+                          title="Permission required">
+                    <i class="bi bi-pencil me-1"></i>
+                    Quick Edit
+                  </button>
+
+                  <button class="btn btn-sm btn-outline-danger"
+                          (click)="isPrivileged() && deletePatient(patient._id)"
+                          [disabled]="!isPrivileged()"
+                          title="Permission required">
+                    <i class="bi bi-trash me-1"></i>
+                    Delete
+                  </button>
+                </div>
+              </td>
+
+            </ng-container>
+
+            <ng-template #editRow>
+
+              <td colspan="6">
+                <div class="inline-edit-row">
+
+                  <input class="form-control" [(ngModel)]="editPatientData.name" placeholder="Name">
+
+                  <input class="form-control" [(ngModel)]="editPatientData.date_of_birth" placeholder="DOB">
+
+                  <input class="form-control" [(ngModel)]="editPatientData.phone" placeholder="Phone">
+
+                  <input class="form-control" [(ngModel)]="editPatientData.allergiesText" placeholder="Allergies (comma separated)">
+
+                  <input class="form-control" [(ngModel)]="editPatientData.notes" placeholder="Notes">
+
+                  <div class="inline-edit-actions" [class.disabled]="!isPrivileged()">
+                    <button class="btn btn-sm btn-success"
+                            (click)="isPrivileged() && saveInlineEdit()"
+                            [disabled]="savingPatientId === patient._id || !isPrivileged()"
+                            title="Permission required">
+                      <i class="bi bi-check-lg"></i>
+                    </button>
+
+                    <button class="btn btn-sm btn-outline-secondary"
+                            (click)="cancelInlineEdit()"
+                            [disabled]="!isPrivileged()">
+                      <i class="bi bi-x-lg"></i>
+                    </button>
+                  </div>
+
+                </div>
+              </td>
+
+            </ng-template>
+
+          </tr>
+
+          <tr *ngIf="filteredPatients.length === 0">
+            <td colspan="6" class="empty-state">
+              <i class="bi bi-person-x"></i>
+              <p>No patients found</p>
+              <small>Try clearing the search or adding a new patient record.</small>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <div class="pagination-bar">
+      <button class="btn btn-sm btn-outline-secondary" (click)="goToPreviousPage()" [disabled]="page === 1">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+
+      <button
+        *ngFor="let p of getPageNumbers()"
+        class="btn btn-sm"
+        [class.btn-primary]="p === page"
+        [class.btn-outline-secondary]="p !== page"
+        (click)="goToPage(p)">
+        {{ p }}
+      </button>
+
+      <button class="btn btn-sm btn-outline-secondary" (click)="goToNextPage()" [disabled]="page === totalPages">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+</div>
+
+<div class="modal-backdrop-custom" *ngIf="selectedPatient" (click)="closePatientModal()">
+  <div class="patient-modal apple-card" (click)="$event.stopPropagation()">
+    <div class="patient-modal-header">
+      <div class="patient-modal-title">
+        <div class="patient-avatar large-avatar">
+          {{ selectedPatient.name?.charAt(0) || '?' }}
+        </div>
+        <div>
+          <p class="eyebrow">Patient Details</p>
+          <h2>{{ selectedPatient.name }}</h2>
+          <span>Patient ID: {{ selectedPatient._id }}</span>
+        </div>
+      </div>
+
+      <button class="btn btn-sm btn-outline-secondary" type="button" (click)="closePatientModal()">
+        <i class="bi bi-x-lg me-1"></i>
+        Close
+      </button>
+    </div>
+
+    <div class="patient-detail-grid">
+      <div class="detail-card">
+        <span>Date of Birth</span>
+        <strong>{{ selectedPatient.date_of_birth || '-' }}</strong>
+      </div>
+
+      <div class="detail-card">
+        <span>Phone</span>
+        <strong>{{ selectedPatient.phone || '-' }}</strong>
+      </div>
+
+      <div class="detail-card full-width">
+        <span>Allergies</span>
+        <strong>{{ selectedPatient.allergies?.join(', ') || 'None recorded' }}</strong>
+      </div>
+
+      <div class="detail-card full-width">
+        <span>Notes</span>
+        <strong>{{ selectedPatient.notes || 'No notes recorded' }}</strong>
+      </div>
+    </div>
+
+    <div class="patient-modal-actions">
+      <a class="btn btn-primary"
+         [routerLink]="['/patients/edit', selectedPatient._id]"
+         [class.disabled]="!isPrivileged()"
+         [attr.aria-disabled]="!isPrivileged()"
+         (click)="!isPrivileged() && $event.preventDefault()"
+         title="Permission required">
+        <i class="bi bi-pencil-square me-2"></i>
+        Edit Patient
+      </a>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,145 @@
+<div class="page-shell fade-in">
+  <section class="page-header reports-header">
+    <div>
+      <p class="eyebrow">Analytics & Insights</p>
+      <h1>Reports</h1>
+      <p class="page-subtitle">Track medication usage, stock value and pharmacy performance insights.</p>
+    </div>
+
+    <div class="page-actions">
+      <button class="btn btn-light" type="button" (click)="refreshReports()">
+        <i class="bi bi-arrow-repeat me-2"></i>
+        Refresh
+      </button>
+
+      <button class="btn btn-outline-primary" type="button" (click)="exportCsv()">
+        <i class="bi bi-filetype-csv me-2"></i>
+        Export CSV
+      </button>
+
+      <button class="btn btn-outline-dark" type="button" (click)="printReport()">
+        <i class="bi bi-printer me-2"></i>
+        Print Report
+      </button>
+    </div>
+  </section>
+
+  <div *ngIf="isLoading" class="alert alert-info border-0 shadow-sm">
+    <i class="bi bi-arrow-repeat me-2"></i>
+    Loading reports...
+  </div>
+
+  <div *ngIf="errorMessage" class="alert alert-danger border-0 shadow-sm">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    {{ errorMessage }}
+  </div>
+
+  <section class="report-summary-grid">
+    <div class="summary-card apple-card">
+      <div class="summary-icon blue">
+        <i class="bi bi-capsule-pill"></i>
+      </div>
+      <div>
+        <strong>{{ mostUsed.length }}</strong>
+        <span>Medicines analysed</span>
+      </div>
+    </div>
+
+    <div class="summary-card apple-card">
+      <div class="summary-icon green">
+        <i class="bi bi-currency-pound"></i>
+      </div>
+      <div>
+        <strong>£{{ stock?.total_stock_value || 0 }}</strong>
+        <span>Total stock value</span>
+      </div>
+    </div>
+
+    <div class="summary-card apple-card">
+      <div class="summary-icon purple">
+        <i class="bi bi-graph-up-arrow"></i>
+      </div>
+      <div>
+        <strong>{{ getTotalUsage() }}</strong>
+        <span>Total units used</span>
+      </div>
+    </div>
+
+    <div class="summary-card apple-card">
+      <div class="summary-icon orange">
+        <i class="bi bi-lightbulb-fill"></i>
+      </div>
+      <div>
+        <strong>{{ getTopMedicationName() }}</strong>
+        <span>Top used item</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="insight-strip apple-card">
+    <div>
+      <p class="eyebrow">Smart Insight</p>
+      <h2>{{ getSmartInsightTitle() }}</h2>
+      <span>{{ getSmartInsightText() }}</span>
+    </div>
+
+    <div class="insight-score">
+      <strong>{{ getReportScore() }}%</strong>
+      <span>Report confidence</span>
+    </div>
+  </section>
+
+  <section class="charts-grid">
+    <div class="apple-card chart-panel">
+      <div class="report-header">
+        <div>
+          <h3>Medication Usage</h3>
+          <p>Top medicines by total quantity used</p>
+        </div>
+        <span class="badge rounded-pill text-bg-primary">Bar Chart</span>
+      </div>
+
+      <div class="usage-chart">
+        <div class="bar-row" *ngFor="let m of mostUsed; trackBy: trackByMedication">
+          <div class="bar-label">
+            <span>{{ m.medication_name }}</span>
+            <strong>{{ m.total_quantity_used }}</strong>
+          </div>
+          <div class="bar-track">
+            <span [style.width.%]="getUsagePercent(m.total_quantity_used)"></span>
+          </div>
+        </div>
+
+        <div *ngIf="mostUsed.length === 0" class="empty-state">
+          No usage data available
+        </div>
+      </div>
+    </div>
+
+    <div class="apple-card chart-panel">
+      <div class="report-header">
+        <div>
+          <h3>Stock Value Distribution</h3>
+          <p>Highest value items currently held in inventory</p>
+        </div>
+        <span class="badge rounded-pill text-bg-success">Value</span>
+      </div>
+
+      <div class="value-chart">
+        <div class="value-row" *ngFor="let m of stock?.medications || []; trackBy: trackByStock">
+          <div>
+            <strong>{{ m.name }}</strong>
+            <span>£{{ m.stock_value }}</span>
+          </div>
+          <div class="value-track">
+            <span [style.width.%]="getStockValuePercent(m.stock_value)"></span>
+          </div>
+        </div>
+
+        <div *ngIf="(stock?.medications || []).length === 0" class="empty-state">
+          No stock data available
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

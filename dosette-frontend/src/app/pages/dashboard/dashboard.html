@@ -1,0 +1,500 @@
+<div class="dashboard-shell">
+  <section class="dashboard-hero animate-block">
+    <div>
+      <p class="eyebrow">Dosette System</p>
+      <h1>Dashboard</h1>
+      <p class="text-muted mb-0">A focused overview of today’s pharmacy workflow, stock status and dosette activity.</p>
+    </div>
+
+    <div class="hero-actions">
+
+      <button class="btn btn-outline-dark" (click)="exportDashboard()">
+        <i class="bi bi-download me-2"></i>
+        Export
+      </button>
+
+      <a routerLink="/cycles/new" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-2"></i>
+        Create Cycle
+      </a>
+
+      <a routerLink="/picking-lists" class="btn btn-outline-primary">
+        <i class="bi bi-clipboard-check me-2"></i>
+        Picking Queue
+      </a>
+    </div>
+  </section>
+
+
+  <div *ngIf="errorMessage" class="alert alert-warning border-0 shadow-sm animate-block">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="isLoading" class="alert alert-info border-0 shadow-sm animate-block">
+    <i class="bi bi-arrow-repeat me-2"></i>
+    Loading dashboard...
+  </div>
+
+  <section class="god-alert-grid animate-block">
+    <div class="god-alert-card urgent" *ngIf="lowStockItems > 0">
+      <div class="god-alert-icon">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+      </div>
+      <div>
+        <strong>{{ lowStockItems }} stock alert(s)</strong>
+        <span>Medication items need review before preparation.</span>
+      </div>
+      <a routerLink="/medications" class="god-alert-link">Review</a>
+    </div>
+
+    <div class="god-alert-card danger" *ngIf="expiredItems > 0">
+      <div class="god-alert-icon">
+        <i class="bi bi-calendar-x-fill"></i>
+      </div>
+      <div>
+        <strong>{{ expiredItems }} expired item(s)</strong>
+        <span>Remove expired medication records from active stock.</span>
+      </div>
+      <a routerLink="/medications" class="god-alert-link">Check</a>
+    </div>
+
+    <div class="god-alert-card calm" *ngIf="lowStockItems === 0 && expiredItems === 0">
+      <div class="god-alert-icon">
+        <i class="bi bi-shield-check"></i>
+      </div>
+      <div>
+        <strong>Stock position looks healthy</strong>
+        <span>No urgent stock or expiry warnings detected.</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="stat-grid primary-stats">
+    <div class="stat-card stat-card-1">
+      <div class="stat-icon blue">
+        <i class="bi bi-people-fill"></i>
+      </div>
+      <div class="stat-content">
+        <p>Total Patients</p>
+        <h2>{{ totalPatients }}</h2>
+        <span class="positive">Active patient records</span>
+        <small>Current registered dosette patients</small>
+        <div class="micro-progress">
+          <span [style.width.%]="patientsChartWidth"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-card stat-card-2">
+      <div class="stat-icon purple">
+        <i class="bi bi-capsule-pill"></i>
+      </div>
+      <div class="stat-content">
+        <p>Medications</p>
+        <h2>{{ totalMedications }}</h2>
+        <span class="positive">Inventory items</span>
+        <small>Tracked medicines and stock records</small>
+        <div class="micro-progress purple-progress">
+          <span [style.width.%]="medicationsChartWidth"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-card warning-card stat-card-3">
+      <div class="stat-icon orange">
+        <i class="bi bi-hourglass-split"></i>
+      </div>
+      <div class="stat-content">
+        <p>Pending Picking</p>
+        <h2>{{ pendingCycles }}</h2>
+        <span>Need preparation</span>
+        <small>Cycles waiting for dispenser action</small>
+        <div class="micro-progress orange-progress">
+          <span [style.width.%]="pendingWorkloadPercent"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-card danger-card stat-card-4">
+      <div class="stat-icon red">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+      </div>
+      <div class="stat-content">
+        <p>Low Stock Items</p>
+        <h2>{{ lowStockItems }}</h2>
+        <span>Reorder required</span>
+        <small>Below configured stock threshold</small>
+        <div class="micro-progress red-progress">
+          <span [style.width.%]="stockRiskPercent"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="workflow-strip">
+    <div class="workflow-item">
+      <span class="workflow-icon green"><i class="bi bi-calendar2-week"></i></span>
+      <div>
+        <strong>{{ totalCycles }}</strong>
+        <small>Total cycles</small>
+      </div>
+    </div>
+
+    <div class="workflow-item">
+      <span class="workflow-icon teal"><i class="bi bi-check-circle-fill"></i></span>
+      <div>
+        <strong>{{ preparedCycles }}</strong>
+        <small>Prepared</small>
+      </div>
+    </div>
+
+    <div class="workflow-item">
+      <span class="workflow-icon slate"><i class="bi bi-truck"></i></span>
+      <div>
+        <strong>{{ deliveredCycles }}</strong>
+        <small>Delivered</small>
+      </div>
+    </div>
+
+    <div class="workflow-item">
+      <span class="workflow-icon red"><i class="bi bi-exclamation-octagon"></i></span>
+      <div>
+        <strong>{{ expiredItems }}</strong>
+        <small>Expired medicines</small>
+      </div>
+    </div>
+  </section>
+
+  <section class="charts-grid clean-charts">
+
+    <div class="panel chart-panel">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow purple-text">Weekly Trends</p>
+          <h3>Cycle Activity</h3>
+        </div>
+        <span class="chart-badge">
+          <i class="bi bi-graph-up-arrow me-1"></i>
+          Trend
+        </span>
+      </div>
+
+      <div class="line-chart">
+        <div class="line-track">
+          <span
+            class="line-fill"
+            *ngFor="let point of weeklyTrend; let i = index"
+            [style.height.%]="point"
+          ></span>
+        </div>
+
+        <div class="line-labels">
+          <span *ngFor="let label of trendLabels">{{ label }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="panel chart-panel">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow blue-text">Performance Overview</p>
+          <h3>System Records</h3>
+        </div>
+        <span class="chart-badge">
+          <i class="bi bi-lightning-charge-fill me-1"></i>
+          Live
+        </span>
+      </div>
+
+      <div class="bar-chart">
+        <div class="bar-row">
+          <div class="bar-label">
+            <span>Patients</span>
+            <strong>{{ totalPatients }}</strong>
+          </div>
+        <div class="bar-track">
+            <span class="bar-fill blue-fill" [style.width.%]="patientsChartWidth"></span>
+          </div>
+          <small class="chart-trend positive-trend">
+            <i class="bi bi-arrow-up-right"></i>
+            Active records
+          </small>
+        </div>
+
+        <div class="bar-row">
+          <div class="bar-label">
+            <span>Medications</span>
+            <strong>{{ totalMedications }}</strong>
+          </div>
+        <div class="bar-track">
+            <span class="bar-fill purple-fill" [style.width.%]="medicationsChartWidth"></span>
+          </div>
+          <small class="chart-trend positive-trend">
+            <i class="bi bi-database-check"></i>
+            Stock catalogue
+          </small>
+        </div>
+
+        <div class="bar-row">
+          <div class="bar-label">
+            <span>Cycles</span>
+            <strong>{{ totalCycles }}</strong>
+          </div>
+        <div class="bar-track">
+            <span class="bar-fill green-fill" [style.width.%]="cyclesChartWidth"></span>
+          </div>
+          <small class="chart-trend positive-trend">
+            <i class="bi bi-calendar2-week"></i>
+            Workflow history
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel chart-panel">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow orange-text">Cycle Status</p>
+          <h3>Workflow Distribution</h3>
+        </div>
+        <span class="chart-badge warning">
+          <i class="bi bi-pie-chart-fill me-1"></i>
+          Status
+        </span>
+      </div>
+
+      <div class="donut-layout">
+        <div
+          class="donut-chart animated-donut"
+          [style.background]="cycleDonutStyle"
+        >
+          <div class="donut-center">
+            <strong>{{ totalCycles }}</strong>
+            <span>Cycles</span>
+          </div>
+        </div>
+
+        <div class="chart-legend">
+          <div class="legend-item">
+            <span class="legend-dot pending-dot"></span>
+            <span>Pending</span>
+            <strong>{{ pendingCycles }}</strong>
+            <small>{{ pendingCyclePercent | number:'1.0-0' }}%</small>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot prepared-dot"></span>
+            <span>Prepared</span>
+            <strong>{{ preparedCycles }}</strong>
+            <small>{{ preparedCyclePercent | number:'1.0-0' }}%</small>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot delivered-dot"></span>
+            <span>Delivered</span>
+            <strong>{{ deliveredCycles }}</strong>
+            <small>{{ deliveredCyclePercent | number:'1.0-0' }}%</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel chart-panel stock-health-panel">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow green-text">Stock Health</p>
+          <h3>Inventory Risk</h3>
+        </div>
+        <span class="chart-badge success">
+          <i class="bi bi-shield-check me-1"></i>
+          Health
+        </span>
+      </div>
+
+      <div class="stock-health-layout">
+        <div class="health-score-ring" [style.background]="stockHealthStyle">
+          <div class="health-score-center">
+            <strong>{{ stockHealthScore | number:'1.0-0' }}%</strong>
+            <span>Healthy</span>
+          </div>
+        </div>
+
+        <div class="health-metrics">
+          <div class="health-metric good">
+            <i class="bi bi-check-circle-fill"></i>
+            <div>
+              <strong>{{ healthyStockItems }}</strong>
+              <span>Healthy stock items</span>
+            </div>
+          </div>
+
+          <div class="health-metric warning">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <div>
+              <strong>{{ lowStockItems }}</strong>
+              <span>Low stock items</span>
+            </div>
+          </div>
+
+          <div class="health-metric danger">
+            <i class="bi bi-x-octagon-fill"></i>
+            <div>
+              <strong>{{ expiredItems }}</strong>
+              <span>Expired medicines</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="dashboard-grid professional-grid">
+    <div class="panel alert-panel panel-1">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow red-text">Stock Attention</p>
+          <h3>Low Stock Alerts</h3>
+        </div>
+        <a routerLink="/medications" class="small-link">View inventory →</a>
+      </div>
+
+      <div class="alert-row">
+        <div>
+          <strong>{{ lowStockItems }}</strong>
+          <span>medication item(s) below threshold</span>
+        </div>
+        <span class="badge rounded-pill text-bg-danger">
+          <i class="bi bi-exclamation-circle me-1"></i>
+          Action needed
+        </span>
+      </div>
+
+      <div class="dashboard-list mt-3" *ngIf="lowStockPreview.length > 0">
+        <div class="dashboard-list-row" *ngFor="let item of lowStockPreview; trackBy: trackByLowStockMedication">
+          <div>
+            <strong>{{ item.name }}</strong>
+            <small>{{ item.strength }} • Threshold {{ item.low_stock_threshold }}</small>
+          </div>
+          <span class="badge text-bg-danger">{{ item.stock_quantity }} left</span>
+        </div>
+      </div>
+
+      <p class="text-muted mt-3 mb-0 small" *ngIf="lowStockPreview.length === 0">
+        No low stock items currently need attention.
+      </p>
+    </div>
+
+    <div class="panel recent-panel panel-2">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow purple-text">Recent Activity</p>
+          <h3>Recent Cycles</h3>
+        </div>
+        <a routerLink="/cycles" class="small-link">View cycles →</a>
+      </div>
+
+      <div class="dashboard-list">
+        <div class="dashboard-list-row" *ngFor="let cycle of recentCycles; trackBy: trackByCycle">
+          <div>
+            <strong>{{ formatWeekRange(cycle.week_start, cycle.week_end) }}</strong>
+            <small>Cycle ID: {{ cycle._id }}</small>
+          </div>
+          <span class="badge rounded-pill" [ngClass]="getCycleStatusClass(cycle.status)">
+            {{ cycle.status | titlecase }}
+          </span>
+          <small class="cycle-age" [ngClass]="getCycleAgeClass(cycle)">
+            {{ getCycleAgeLabel(cycle) }}
+          </small>
+        </div>
+
+        <div *ngIf="recentCycles.length === 0" class="text-muted small">
+          No cycle activity available yet.
+        </div>
+      </div>
+    </div>
+
+    <div class="panel picking-panel panel-3">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow orange-text">Preparation Queue</p>
+          <h3>Pending Picking Lists</h3>
+        </div>
+        <a routerLink="/picking-lists" class="small-link">Open queue →</a>
+      </div>
+
+      <div class="big-number">
+        <i class="bi bi-clipboard-check me-2"></i>
+        {{ pendingCycles }}
+      </div>
+      <p class="text-muted mb-0 small">Pending weekly dosette trays waiting to be prepared by pharmacy staff.</p>
+
+      <div class="queue-health">
+        <div>
+          <span>Workload pressure</span>
+          <strong>{{ pendingWorkloadPercent | number:'1.0-0' }}%</strong>
+        </div>
+        <div class="queue-track">
+          <span [style.width.%]="pendingWorkloadPercent"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel report-panel panel-4">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow blue-text">Analytics</p>
+          <h3>Most Used Medications</h3>
+        </div>
+        <a routerLink="/reports" class="small-link">Reports →</a>
+      </div>
+
+      <div class="mini-list">
+        <div *ngFor="let item of mostUsed; trackBy: trackByMedication" class="mini-list-row">
+          <span>{{ item.medication_name }}</span>
+          <strong>{{ item.total_quantity_used }}</strong>
+        </div>
+        <div *ngIf="mostUsed.length === 0" class="text-muted small">
+          No medication usage data available yet.
+        </div>
+      </div>
+    </div>
+
+    <div class="panel overview-panel panel-5">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow green-text">System Overview</p>
+          <h3>Stock Valuation</h3>
+        </div>
+      </div>
+
+      <div class="valuation">
+        <i class="bi bi-currency-pound me-1"></i>
+        {{ totalStockValue | number:'1.2-2' }}
+      </div>
+      <p class="text-muted mb-3 small">Estimated value of current medication stock.</p>
+
+      <div class="system-score-card">
+        <div>
+          <span>Operational Score</span>
+          <strong>{{ operationalScore | number:'1.0-0' }}%</strong>
+        </div>
+        <div class="score-ring-mini" [style.background]="operationalScoreStyle">
+          <span>{{ operationalScore | number:'1.0-0' }}</span>
+        </div>
+      </div>
+
+      <div class="quick-actions">
+        <a routerLink="/patients" class="btn btn-light">
+          <i class="bi bi-people me-2"></i>
+          Patients
+        </a>
+        <a routerLink="/medications" class="btn btn-light">
+          <i class="bi bi-capsule me-2"></i>
+          Inventory
+        </a>
+        <a routerLink="/cycles" class="btn btn-light">
+          <i class="bi bi-calendar-week me-2"></i>
+          Cycles
+        </a>
+      </div>
+    </div>
+  </section>
+</div>

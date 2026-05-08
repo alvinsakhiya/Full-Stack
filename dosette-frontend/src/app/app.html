@@ -1,0 +1,9 @@
+<div class="app-shell" [class.auth-shell]="isAuthPage">
+  <app-navbar *ngIf="!isAuthPage"></app-navbar>
+
+  <main class="app-main" [class.auth-main]="isAuthPage">
+    <section class="route-animation">
+      <router-outlet></router-outlet>
+    </section>
+  </main>
+</div>

@@ -1,0 +1,341 @@
+<div class="page-shell fade-in">
+  <section class="page-header medications-header">
+    <div>
+      <p class="eyebrow">Medication Inventory</p>
+      <h1>Medications</h1>
+      <p class="page-subtitle">Manage stock levels, expiry dates, strengths, forms and unit prices.</p>
+    </div>
+
+    <div class="page-actions">
+      <button class="btn btn-light" type="button" (click)="refreshMedications()">
+        <i class="bi bi-arrow-repeat me-2"></i>
+        Refresh
+      </button>
+
+      <a routerLink="/medications/new" class="btn btn-primary page-action"
+         [class.disabled]="!isPrivileged()"
+         [attr.aria-disabled]="!isPrivileged()"
+         (click)="!isPrivileged() && $event.preventDefault()"
+         title="Permission required">
+        <i class="bi bi-capsule-pill me-2"></i>
+        Add Medication
+      </a>
+    </div>
+  </section>
+
+  <section class="medication-summary-grid">
+    <div class="summary-card apple-card">
+      <div class="summary-icon blue">
+        <i class="bi bi-capsule-pill"></i>
+      </div>
+      <div>
+        <strong>{{ total }}</strong>
+        <span>Total records</span>
+      </div>
+    </div>
+
+    <div class="summary-card apple-card">
+      <div class="summary-icon orange">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+      </div>
+      <div>
+        <strong>{{ lowStockCount }}</strong>
+        <span>Low stock</span>
+      </div>
+    </div>
+
+    <div class="summary-card apple-card">
+      <div class="summary-icon red">
+        <i class="bi bi-calendar-x-fill"></i>
+      </div>
+      <div>
+        <strong>{{ expiredCount }}</strong>
+        <span>Expired items</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="apple-card search-card">
+    <form class="search-form" (ngSubmit)="onSearch()">
+      <div class="search-input-wrap">
+        <i class="bi bi-search"></i>
+        <input
+          class="form-control"
+          [(ngModel)]="search"
+          name="search"
+          placeholder="Search medication by name"
+        >
+      </div>
+
+      <button class="btn btn-outline-primary" type="submit">
+        <i class="bi bi-search me-2"></i>
+        Search
+      </button>
+
+      <button class="btn btn-outline-secondary" type="button" (click)="clearSearch()" *ngIf="search">
+        <i class="bi bi-x-circle me-2"></i>
+        Clear
+      </button>
+
+      <select class="form-select filter-select" [(ngModel)]="stockFilter" name="stockFilter" (change)="applyMedicationFilters()">
+        <option value="all">All stock status</option>
+        <option value="low">Low stock only</option>
+        <option value="healthy">Healthy stock only</option>
+      </select>
+
+      <select class="form-select filter-select" [(ngModel)]="expiryFilter" name="expiryFilter" (change)="applyMedicationFilters()">
+        <option value="all">All expiry status</option>
+        <option value="expired">Expired only</option>
+        <option value="valid">Valid only</option>
+      </select>
+    </form>
+  </section>
+
+  <div *ngIf="errorMessage" class="alert alert-danger border-0 shadow-sm">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="isLoading && medications.length === 0" class="alert alert-info border-0 shadow-sm">
+    <i class="bi bi-arrow-repeat me-2"></i>
+    Loading medications...
+  </div>
+
+  <section *ngIf="!isLoading || medications.length > 0" class="apple-card table-card">
+    <div class="table-card-header">
+      <div>
+        <h2>Medication Stock</h2>
+        <p>{{ total }} total medication record(s)</p>
+      </div>
+
+      <span class="badge rounded-pill text-bg-primary">
+        {{ filteredMedications.length }} shown
+      </span>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table apple-table align-middle">
+        <thead>
+          <tr>
+            <th>
+              <button class="sort-header" type="button" (click)="sortMedications('name')">
+                Name
+                <i class="bi" [ngClass]="getSortIcon('name')"></i>
+              </button>
+            </th>
+            <th>
+              <button class="sort-header" type="button" (click)="sortMedications('strength')">
+                Strength
+                <i class="bi" [ngClass]="getSortIcon('strength')"></i>
+              </button>
+            </th>
+            <th>
+              <button class="sort-header" type="button" (click)="sortMedications('form')">
+                Form
+                <i class="bi" [ngClass]="getSortIcon('form')"></i>
+              </button>
+            </th>
+            <th>
+              <button class="sort-header" type="button" (click)="sortMedications('stock_quantity')">
+                Stock
+                <i class="bi" [ngClass]="getSortIcon('stock_quantity')"></i>
+              </button>
+            </th>
+            <th>
+              <button class="sort-header" type="button" (click)="sortMedications('expiry_date')">
+                Expiry
+                <i class="bi" [ngClass]="getSortIcon('expiry_date')"></i>
+              </button>
+            </th>
+            <th>
+              <button class="sort-header" type="button" (click)="sortMedications('price_per_unit')">
+                Price
+                <i class="bi" [ngClass]="getSortIcon('price_per_unit')"></i>
+              </button>
+            </th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let m of filteredMedications; trackBy: trackByMedication" class="table-row-animate">
+            <ng-container *ngIf="editingMedicationId !== m._id; else editRow">
+              <td>
+                <div class="medication-cell">
+                  <div class="medication-avatar">
+                    <i class="bi bi-capsule"></i>
+                  </div>
+                  <strong [innerHTML]="highlightSearchText(m.name)"></strong>
+                </div>
+              </td>
+
+              <td>{{ m.strength }}</td>
+              <td>
+                <span class="soft-pill">{{ m.form }}</span>
+              </td>
+              <td>
+                <span
+                  class="stock-pill"
+                  [class.low-stock]="m.stock_quantity <= m.low_stock_threshold"
+                >
+                  {{ m.stock_quantity }} in stock
+                </span>
+              </td>
+              <td>
+                <span class="expiry-pill" [class.expired-pill]="isExpired(m.expiry_date)">
+                  <i class="bi bi-calendar3 me-1"></i>
+                  {{ m.expiry_date }}
+                </span>
+              </td>
+              <td>£{{ m.price_per_unit }}</td>
+              <td class="text-end">
+                <div class="action-group">
+                  <button class="btn btn-sm btn-outline-primary" type="button" (click)="openMedicationModal(m)">
+                    <i class="bi bi-eye me-1"></i>
+                    View
+                  </button>
+
+                  <button class="btn btn-sm btn-outline-warning" type="button"
+                          (click)="isPrivileged() && startInlineEdit(m)"
+                          [disabled]="!isPrivileged()"
+                          title="Permission required">
+                    <i class="bi bi-pencil me-1"></i>
+                    Quick Edit
+                  </button>
+
+                  <button class="btn btn-sm btn-outline-danger"
+                          (click)="isPrivileged() && deleteMedication(m._id)"
+                          [disabled]="!isPrivileged()"
+                          title="Permission required">
+                    <i class="bi bi-trash me-1"></i>
+                    Delete
+                  </button>
+                </div>
+              </td>
+            </ng-container>
+
+            <ng-template #editRow>
+              <td colspan="7">
+                <div class="inline-edit-row">
+                  <input class="form-control" [(ngModel)]="editMedicationData.name" placeholder="Name">
+                  <input class="form-control" [(ngModel)]="editMedicationData.strength" placeholder="Strength">
+                  <input class="form-control" [(ngModel)]="editMedicationData.form" placeholder="Form">
+                  <input type="number" class="form-control" [(ngModel)]="editMedicationData.stock_quantity" placeholder="Stock">
+                  <input type="date" class="form-control" [(ngModel)]="editMedicationData.expiry_date" placeholder="Expiry">
+                  <input type="number" class="form-control" [(ngModel)]="editMedicationData.price_per_unit" placeholder="Price">
+
+                  <div class="inline-edit-actions" [class.disabled]="!isPrivileged()">
+                    <button class="btn btn-sm btn-success"
+                            (click)="isPrivileged() && saveInlineEdit()"
+                            [disabled]="savingMedicationId === m._id || !isPrivileged()"
+                            title="Permission required">
+                      <i class="bi bi-check-lg"></i>
+                    </button>
+
+                    <button class="btn btn-sm btn-outline-secondary"
+                            (click)="cancelInlineEdit()"
+                            [disabled]="!isPrivileged()">
+                      <i class="bi bi-x-lg"></i>
+                    </button>
+                  </div>
+                </div>
+              </td>
+            </ng-template>
+          </tr>
+
+          <tr *ngIf="filteredMedications.length === 0">
+            <td colspan="7" class="empty-state">
+              <i class="bi bi-capsule"></i>
+              <p>No medications found</p>
+              <small>Try clearing filters or adding a new medication.</small>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination-bar">
+      <button class="btn btn-sm btn-outline-secondary" (click)="goToPreviousPage()" [disabled]="page === 1">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+
+      <button
+        *ngFor="let p of getPageNumbers()"
+        class="btn btn-sm"
+        [class.btn-primary]="p === page"
+        [class.btn-outline-secondary]="p !== page"
+        (click)="goToPage(p)">
+        {{ p }}
+      </button>
+
+      <button class="btn btn-sm btn-outline-secondary" (click)="goToNextPage()" [disabled]="page === totalPages">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+  </section>
+</div>
+
+<div class="modal-backdrop-custom" *ngIf="selectedMedication" (click)="closeMedicationModal()">
+  <div class="medication-modal apple-card" (click)="$event.stopPropagation()">
+    <div class="medication-modal-header">
+      <div class="medication-modal-title">
+        <div class="medication-avatar large-avatar">
+          <i class="bi bi-capsule"></i>
+        </div>
+        <div>
+          <p class="eyebrow">Medication Details</p>
+          <h2>{{ selectedMedication.name }}</h2>
+          <span>Medication ID: {{ selectedMedication._id }}</span>
+        </div>
+      </div>
+
+      <button class="btn btn-sm btn-outline-secondary" type="button" (click)="closeMedicationModal()">
+        <i class="bi bi-x-lg me-1"></i>
+        Close
+      </button>
+    </div>
+
+    <div class="medication-detail-grid">
+      <div class="detail-card">
+        <span>Strength</span>
+        <strong>{{ selectedMedication.strength || '-' }}</strong>
+      </div>
+
+      <div class="detail-card">
+        <span>Form</span>
+        <strong>{{ selectedMedication.form || '-' }}</strong>
+      </div>
+
+      <div class="detail-card">
+        <span>Stock Quantity</span>
+        <strong>{{ selectedMedication.stock_quantity }}</strong>
+      </div>
+
+      <div class="detail-card">
+        <span>Low Stock Threshold</span>
+        <strong>{{ selectedMedication.low_stock_threshold }}</strong>
+      </div>
+
+      <div class="detail-card">
+        <span>Expiry Date</span>
+        <strong>{{ selectedMedication.expiry_date || '-' }}</strong>
+      </div>
+
+      <div class="detail-card">
+        <span>Price Per Unit</span>
+        <strong>£{{ selectedMedication.price_per_unit }}</strong>
+      </div>
+    </div>
+
+    <div class="medication-modal-actions">
+      <a class="btn btn-primary" [routerLink]="['/medications/edit', selectedMedication._id]"
+         [class.disabled]="!isPrivileged()"
+         [attr.aria-disabled]="!isPrivileged()"
+         (click)="!isPrivileged() && $event.preventDefault()"
+         title="Permission required">
+        <i class="bi bi-pencil-square me-2"></i>
+        Edit Medication
+      </a>
+    </div>
+  </div>
+</div>
